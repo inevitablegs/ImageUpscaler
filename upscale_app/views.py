@@ -29,7 +29,7 @@ def upscale_image(input_path, output_path):
             '-o', output_path,
             '-n', 'realesrgan-x4plus',
             '-m', model_path,
-            '-g', '1'  # Use NVIDIA GPU (change to 0 for AMD or -1 for CPU)
+            '-g', '-1'  # Use NVIDIA GPU (change to 0 for AMD or -1 for CPU)
         ], check=True, capture_output=True, text=True)
         
         print("Upscaling output:", result.stdout)
