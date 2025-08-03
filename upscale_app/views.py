@@ -9,7 +9,7 @@ from PIL import Image
 def upscale_image(input_path, output_path):
     try:
         # Get absolute paths to all required files
-        executable_path = os.path.join(settings.BASE_DIR, 'realesrgan-ncnn-vulkan.exe')
+        executable_path = os.path.join(settings.BASE_DIR, 'realesrgan-ncnn-vulkan')
         model_path = os.path.join(settings.BASE_DIR, 'models')
         
         # Verify all files exist
