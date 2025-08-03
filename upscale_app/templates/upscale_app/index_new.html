@@ -1,0 +1,767 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Image Upscaler - Professional Enhancement</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #ffffff;
+    }
+    
+    /* Navigation */
+    .navbar {
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Hero Section */
+    .hero-section {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .hero-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+      opacity: 0.3;
+    }
+    
+    /* Upload Section */
+    .upload-section {
+      background: #111111;
+      padding: 4rem 0;
+    }
+    
+    .upload-container {
+      background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 3rem;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    }
+    
+    .custom-file-input {
+      border: 2px dashed rgba(102, 126, 234, 0.5);
+      border-radius: 15px;
+      padding: 3rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      background: rgba(102, 126, 234, 0.05);
+    }
+    
+    .custom-file-input:hover {
+      border-color: #667eea;
+      background: rgba(102, 126, 234, 0.1);
+      transform: translateY(-2px);
+    }
+    
+    .image-preview {
+      max-width: 100%;
+      max-height: 300px;
+      margin-top: 1rem;
+      border-radius: 10px;
+      display: none;
+      object-fit: contain;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .preview-container {
+      margin-top: 1rem;
+      text-align: center;
+      display: none;
+    }
+    
+    /* Results Section */
+    .results-section {
+      background: #0a0a0a;
+      padding: 4rem 0;
+    }
+    
+    /* Comparison Slider */
+    .comparison-container-wrapper {
+      background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 25px;
+      padding: 2.5rem;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    }
+    
+    .comparison-slider {
+      position: relative;
+      width: 100%;
+      max-width: 1000px;
+      height: 500px;
+      margin: 0 auto;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      background: #000;
+    }
+    
+    .comparison-slider .background-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
+    
+    .comparison-slider .overlay-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+      z-index: 2;
+    }
+    
+    .comparison-resize {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      height: 100%;
+      width: 4px;
+      background: linear-gradient(to bottom, #fff, #e5e5e5, #fff);
+      cursor: ew-resize;
+      z-index: 3;
+      transform: translateX(-50%);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    }
+    
+    .comparison-resize:before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      border: 4px solid white;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      transition: all 0.3s ease;
+    }
+    
+    .comparison-resize:hover:before {
+      transform: translate(-50%, -50%) scale(1.15);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+    }
+    
+    .comparison-resize:after {
+      content: '⟷';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      z-index: 1;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+    
+    .comparison-label {
+      position: absolute;
+      top: 25px;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.7));
+      color: white;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      pointer-events: none;
+      z-index: 4;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    }
+    
+    .comparison-label-before {
+      left: 25px;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.9));
+    }
+    
+    .comparison-label-after {
+      right: 25px;
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(22, 163, 74, 0.9));
+    }
+    
+    /* Download Section */
+    .download-section {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 3rem 0;
+      position: relative;
+    }
+    
+    .download-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Footer */
+    .footer {
+      background: #000000;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 3rem 0 2rem;
+    }
+    
+    /* Buttons */
+    .btn-primary {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      border: none;
+      padding: 15px 30px;
+      border-radius: 12px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 35px rgba(102, 126, 234, 0.5);
+    }
+    
+    .btn-download {
+      background: linear-gradient(45deg, #10b981, #059669);
+      border: none;
+      padding: 18px 35px;
+      border-radius: 15px;
+      font-weight: 700;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+      font-size: 16px;
+    }
+    
+    .btn-download:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 20px 45px rgba(16, 185, 129, 0.6);
+    }
+    
+    /* Error Message */
+    .error-message {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1));
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 15px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      backdrop-filter: blur(10px);
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .comparison-slider {
+        height: 400px;
+      }
+      
+      .upload-container {
+        padding: 2rem;
+      }
+      
+      .hero-section {
+        min-height: 50vh;
+      }
+      
+      .navbar .hidden {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar fixed w-full top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center space-x-3">
+          <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-2 rounded-lg">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-white">AI Image Upscaler</h1>
+            <p class="text-xs text-gray-400">Professional AI Enhancement</p>
+          </div>
+        </div>
+        <div class="hidden md:flex items-center space-x-8">
+          <a href="#features" class="text-gray-300 hover:text-white transition-colors">Features</a>
+          <a href="#how-it-works" class="text-gray-300 hover:text-white transition-colors">How it Works</a>
+          <a href="#upload" class="text-gray-300 hover:text-white transition-colors">Upload</a>
+          <button onclick="document.getElementById('upload').scrollIntoView({behavior: 'smooth'})" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all">
+            Get Started
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero-section relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div class="text-center">
+        <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+          Transform Your Images with
+          <span class="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+            AI Magic
+          </span>
+        </h1>
+        <p class="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-8 leading-relaxed">
+          Enhance image resolution up to 4× using cutting-edge Real-ESRGAN technology. 
+          Perfect for photos, artwork, and digital content.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <button onclick="document.getElementById('upload').scrollIntoView({behavior: 'smooth'})" class="btn-primary text-white px-8 py-4 rounded-xl font-semibold text-lg inline-flex items-center justify-center">
+            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            </svg>
+            Start Enhancing
+          </button>
+          <button onclick="document.getElementById('how-it-works').scrollIntoView({behavior: 'smooth'})" class="border-2 border-white text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white hover:text-gray-900 transition-all inline-flex items-center justify-center">
+            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.01M15 10h1.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Learn More
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="py-20 bg-gray-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold text-white mb-4">Why Choose Our AI Upscaler?</h2>
+        <p class="text-xl text-gray-400 max-w-2xl mx-auto">Advanced AI technology meets user-friendly design for professional results</p>
+      </div>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="text-center">
+          <div class="bg-gradient-to-r from-blue-500 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-white mb-2">Lightning Fast</h3>
+          <p class="text-gray-400">Process images in seconds with our optimized AI models</p>
+        </div>
+        <div class="text-center">
+          <div class="bg-gradient-to-r from-green-500 to-blue-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-white mb-2">High Quality</h3>
+          <p class="text-gray-400">Preserve details and enhance clarity with Real-ESRGAN</p>
+        </div>
+        <div class="text-center">
+          <div class="bg-gradient-to-r from-purple-500 to-pink-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-white mb-2">Secure & Private</h3>
+          <p class="text-gray-400">Your images are processed securely and never stored</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it Works Section -->
+  <section id="how-it-works" class="py-20 bg-black">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold text-white mb-4">How It Works</h2>
+        <p class="text-xl text-gray-400 max-w-2xl mx-auto">Three simple steps to transform your images</p>
+      </div>
+      <div class="grid md:grid-cols-3 gap-12">
+        <div class="text-center">
+          <div class="bg-gradient-to-r from-indigo-500 to-purple-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span class="text-2xl font-bold text-white">1</span>
+          </div>
+          <h3 class="text-2xl font-semibold text-white mb-4">Upload Image</h3>
+          <p class="text-gray-400 text-lg">Choose your image file (PNG or JPG) up to 10MB</p>
+        </div>
+        <div class="text-center">
+          <div class="bg-gradient-to-r from-purple-600 to-pink-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span class="text-2xl font-bold text-white">2</span>
+          </div>
+          <h3 class="text-2xl font-semibold text-white mb-4">AI Processing</h3>
+          <p class="text-gray-400 text-lg">Our AI analyzes and enhances your image with Real-ESRGAN</p>
+        </div>
+        <div class="text-center">
+          <div class="bg-gradient-to-r from-pink-600 to-red-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span class="text-2xl font-bold text-white">3</span>
+          </div>
+          <h3 class="text-2xl font-semibold text-white mb-4">Download Result</h3>
+          <p class="text-gray-400 text-lg">Get your enhanced image with 4× better resolution</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Error Message -->
+  {% if error %}
+  <div class="max-w-4xl mx-auto px-4 pt-8">
+    <div class="error-message">
+      <div class="flex items-center">
+        <svg class="w-6 h-6 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <p class="font-medium text-red-300">{{ error }}</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Upload Section -->
+  <section id="upload" class="upload-section">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-12">
+        <h2 class="text-4xl font-bold text-white mb-4">Upload Your Image</h2>
+        <p class="text-xl text-gray-400">Transform your images with professional AI enhancement</p>
+      </div>
+      
+      <div class="upload-container">
+        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+          {% csrf_token %}
+          <div class="space-y-4">
+            <div class="custom-file-input">
+              {{ form.image }}
+              <div class="mt-4">
+                <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <div class="text-sm text-gray-300">
+                  <label class="relative cursor-pointer bg-transparent rounded-md font-medium text-indigo-400 hover:text-indigo-300">
+                    <span>Upload a file</span>
+                  </label>
+                  <p class="pl-1 inline">or drag and drop</p>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">PNG, JPG up to 10MB</p>
+              </div>
+              <div class="preview-container">
+                <img id="image-preview" class="image-preview" alt="Preview">
+                <button type="button" id="remove-image" class="mt-3 px-4 py-2 text-sm text-red-400 hover:text-red-300 border border-red-400 rounded-lg hover:border-red-300 transition-colors hidden">
+                  Remove Image
+                </button>
+              </div>
+            </div>
+            
+            <div class="text-center">
+              <button type="submit" class="btn-primary text-white font-semibold text-lg inline-flex items-center justify-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z"/>
+                </svg>
+                Enhance with AI
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results Section -->
+  {% if original %}
+  <section class="results-section">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-12">
+        <h2 class="text-4xl font-bold text-white mb-4">🎉 Enhancement Complete!</h2>
+        <p class="text-xl text-gray-400">Compare the original vs AI-enhanced version</p>
+      </div>
+      
+      <!-- Image Comparison Slider -->
+      {% if original and upscaled %}
+      <div class="comparison-container-wrapper">
+        <h3 class="text-2xl font-bold text-center text-white mb-2">
+          Before vs After Comparison
+        </h3>
+        <p class="text-center text-gray-400 mb-6">
+          Drag the slider to reveal the AI enhancement
+        </p>
+        <div class="comparison-slider">
+          <!-- Background image (Enhanced) -->
+          <img src="{{ upscaled }}" alt="Enhanced image" class="background-image">
+          
+          <!-- Overlay image (Original) -->
+          <img src="{{ original }}" alt="Original image" class="overlay-image" id="overlay-img">
+          
+          <!-- Slider handle -->
+          <div class="comparison-resize" id="slider-handle"></div>
+          
+          <!-- Labels -->
+          <div class="comparison-label comparison-label-before">Original</div>
+          <div class="comparison-label comparison-label-after">Enhanced (4×)</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+  
+  <!-- Download Section -->
+  {% if upscaled %}
+  <section class="download-section relative">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div class="text-center">
+        <h2 class="text-3xl font-bold text-white mb-4">Ready to Download</h2>
+        <p class="text-lg text-white/90 mb-8">Your enhanced image is ready for download</p>
+        <a href="{{ upscaled }}" 
+           download="upscaled_{{ original|cut:'media/' }}"
+           class="btn-download text-white font-semibold inline-flex items-center justify-center">
+          <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          Download Enhanced Image
+        </a>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid md:grid-cols-4 gap-8 mb-8">
+        <div class="md:col-span-2">
+          <div class="flex items-center space-x-3 mb-4">
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-2 rounded-lg">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white">AI Image Upscaler</h3>
+          </div>
+          <p class="text-gray-400 mb-4">
+            Transform your images with cutting-edge AI technology. Our Real-ESRGAN powered upscaler 
+            enhances image resolution while preserving fine details and improving overall quality.
+          </p>
+          <div class="flex space-x-4">
+            <div class="text-sm text-gray-500">
+              <p>© 2025 AI Image Upscaler. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <h4 class="text-lg font-semibold text-white mb-4">Features</h4>
+          <ul class="space-y-2 text-gray-400">
+            <li>4× Resolution Enhancement</li>
+            <li>Real-ESRGAN Technology</li>
+            <li>Fast Processing</li>
+            <li>High Quality Output</li>
+            <li>Secure & Private</li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="text-lg font-semibold text-white mb-4">Support</h4>
+          <ul class="space-y-2 text-gray-400">
+            <li>Supported Formats</li>
+            <li>File Size Limits</li>
+            <li>Processing Time</li>
+            <li>Quality Guidelines</li>
+            <li>Troubleshooting</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="border-t border-gray-800 pt-8">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+          <div class="flex items-center space-x-2 text-gray-400 mb-4 md:mb-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <p>Powered by Real-ESRGAN AI Technology</p>
+          </div>
+          <div class="text-gray-500 text-sm">
+            Made with ❤️ for better images
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Add smooth scrolling to the page
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        document.querySelector(this.getAttribute('href')).scrollIntoView({
+          behavior: 'smooth'
+        });
+      });
+    });
+
+    // Add file input preview functionality
+    const fileInput = document.querySelector('input[type="file"]');
+    const previewContainer = document.querySelector('.preview-container');
+    const imagePreview = document.getElementById('image-preview');
+    const removeButton = document.getElementById('remove-image');
+
+    if (fileInput) {
+      fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          
+          reader.onload = function(e) {
+            // Show preview container and image
+            previewContainer.style.display = 'block';
+            imagePreview.style.display = 'block';
+            imagePreview.src = e.target.result;
+            removeButton.style.display = 'inline-block';
+            
+            // Add filename below the preview
+            const parent = fileInput.closest('.custom-file-input');
+            const existingText = parent.querySelector('p:not([id])');
+            if (existingText && !existingText.classList.contains('text-xs')) {
+              existingText.remove();
+            }
+            let text = parent.querySelector('.filename-text');
+            if (!text) {
+              text = document.createElement('p');
+              text.className = 'mt-2 text-sm text-gray-300 filename-text';
+              parent.insertBefore(text, previewContainer);
+            }
+            text.textContent = `Selected: ${file.name}`;
+          };
+
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Remove image functionality
+      removeButton.addEventListener('click', function() {
+        fileInput.value = ''; // Clear the file input
+        previewContainer.style.display = 'none';
+        imagePreview.src = '';
+        removeButton.style.display = 'none';
+        
+        // Remove filename text
+        const parent = fileInput.closest('.custom-file-input');
+        const existingText = parent.querySelector('.filename-text');
+        if (existingText) {
+          existingText.remove();
+        }
+      });
+    }
+
+    // Image comparison slider functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const slider = document.querySelector('.comparison-slider');
+      if (slider) {
+        const overlayImg = document.getElementById('overlay-img');
+        const handle = document.getElementById('slider-handle');
+        let isResizing = false;
+
+        function updateSlider(percent) {
+          // Update clip-path to reveal/hide the overlay image
+          overlayImg.style.clipPath = `polygon(0 0, ${percent}% 0, ${percent}% 100%, 0 100%)`;
+          handle.style.left = percent + '%';
+        }
+
+        // Mouse events
+        handle.addEventListener('mousedown', function(e) {
+          isResizing = true;
+          document.body.style.cursor = 'ew-resize';
+          e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', function(e) {
+          if (!isResizing) return;
+          
+          const sliderRect = slider.getBoundingClientRect();
+          let x = e.clientX - sliderRect.left;
+          
+          // Constrain within slider bounds
+          x = Math.max(0, Math.min(x, sliderRect.width));
+          
+          const percent = (x / sliderRect.width) * 100;
+          updateSlider(percent);
+        });
+
+        document.addEventListener('mouseup', function() {
+          isResizing = false;
+          document.body.style.cursor = '';
+        });
+
+        // Touch events for mobile
+        handle.addEventListener('touchstart', function(e) {
+          isResizing = true;
+          e.preventDefault();
+        });
+
+        document.addEventListener('touchmove', function(e) {
+          if (!isResizing) return;
+          
+          const sliderRect = slider.getBoundingClientRect();
+          let x = e.touches[0].clientX - sliderRect.left;
+          
+          // Constrain within slider bounds
+          x = Math.max(0, Math.min(x, sliderRect.width));
+          
+          const percent = (x / sliderRect.width) * 100;
+          updateSlider(percent);
+        });
+
+        document.addEventListener('touchend', function() {
+          isResizing = false;
+        });
+
+        // Click anywhere on slider to move handle
+        slider.addEventListener('click', function(e) {
+          if (e.target === handle) return;
+          
+          const sliderRect = slider.getBoundingClientRect();
+          let x = e.clientX - sliderRect.left;
+          
+          // Constrain within slider bounds
+          x = Math.max(0, Math.min(x, sliderRect.width));
+          
+          const percent = (x / sliderRect.width) * 100;
+          updateSlider(percent);
+        });
+      }
+    });
+
+    // Add navbar background on scroll
+    window.addEventListener('scroll', function() {
+      const navbar = document.querySelector('.navbar');
+      if (window.scrollY > 50) {
+        navbar.style.background = 'rgba(0, 0, 0, 0.98)';
+      } else {
+        navbar.style.background = 'rgba(0, 0, 0, 0.95)';
+      }
+    });
+  </script>
+</body>
+</html>
