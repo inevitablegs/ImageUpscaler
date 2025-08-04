@@ -1,112 +1,86 @@
-import os
-import uuid
 from django.conf import settings
 from django.shortcuts import render
 from .forms import UploadImageForm
-import subprocess
+import os
+import uuid
 from PIL import Image
-
-def upscale_image(input_path, output_path):
-    try:
-        # Get absolute paths to all required files
-        executable_path = os.path.join(settings.BASE_DIR, 'realesrgan-ncnn-vulkan')
-        model_path = os.path.join(settings.BASE_DIR, 'models')
-        
-        # Verify all files exist
-        required_files = [
-            executable_path,
-            os.path.join(model_path, 'realesrgan-x4plus.param'),
-            os.path.join(model_path, 'realesrgan-x4plus.bin')
-        ]
-        
-        for file in required_files:
-            if not os.path.exists(file):
-                raise FileNotFoundError(f"Required file not found: {file}")
-
-        result = subprocess.run([
-            executable_path,
-            '-i', input_path,
-            '-o', output_path,
-            '-n', 'realesrgan-x4plus',
-            '-m', model_path,
-            '-g', '-1'  # Use NVIDIA GPU (change to 0 for AMD or -1 for CPU)
-        ], check=True, capture_output=True, text=True)
-        
-        print("Upscaling output:", result.stdout)
-        if result.stderr:
-            print("Upscaling errors:", result.stderr)
-            
-        return os.path.exists(output_path)
-        
-    except subprocess.CalledProcessError as e:
-        print(f"Upscaling failed with error: {e}")
-        print("Command output:", e.stdout)
-        print("Command error:", e.stderr)
-        return False
-    except Exception as e:
-        print(f"Unexpected error during upscaling: {e}")
-        return False
+from gradio_client import Client
 
 def index(request):
     upscaled_url = original_url = None
-    display_width = display_height = None  # These will control the display size
+    display_width = display_height = None
+    # Add these so the template doesn't error out if they aren't set
+    original_width = original_height = upscaled_width = upscaled_height = None 
     error = None
+
+    # Use the 'index_new.html' template
+    template_name = 'upscale_app/index_new.html' 
 
     if request.method == 'POST':
         form = UploadImageForm(request.POST, request.FILES)
         if form.is_valid():
             uploaded_file = form.cleaned_data['image']
             
-            # Ensure media directory exists
             os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
-            
-            # Generate unique filename
-            ext = os.path.splitext(uploaded_file.name)[1].lower()
+            ext = os.path.splitext(uploaded_file.name)[1].lower() if uploaded_file.name else '.png'
             filename = f"{uuid.uuid4()}{ext}"
             input_path = os.path.join(settings.MEDIA_ROOT, filename)
-            output_filename = f"upscaled_{filename}"
-            output_path = os.path.join(settings.MEDIA_ROOT, output_filename)
 
-            # Save the uploaded image
             with open(input_path, 'wb+') as destination:
                 for chunk in uploaded_file.chunks():
                     destination.write(chunk)
+            
+            original_url = settings.MEDIA_URL + filename
+            
+            try:
+                with Image.open(input_path) as img:
+                    original_width, original_height = img.size
+            except Exception as e:
+                print(f"Could not read original image dimensions: {e}")
 
-            if os.path.exists(input_path):
+            try:
+                # IMPORTANT: Replace with YOUR Space name
+                client = Client("inevitable-gs/image-upscaler") 
+                
+                # CORRECTED: Pass input_path as a positional argument
+                result_filepath, status_message = client.predict(
+                    input_path,
+                    api_name="/predict"
+                )
+
+                if status_message != "Success":
+                    raise Exception(f"API returned an error: {status_message}")
+
+                output_filename = f"upscaled_{filename}"
+                output_path_local = os.path.join(settings.MEDIA_ROOT, output_filename)
+                
+                os.rename(result_filepath, output_path_local)
+
+                upscaled_url = settings.MEDIA_URL + output_filename
+                
                 try:
-                    # Get original dimensions
-                    with Image.open(input_path) as img:
-                        original_width, original_height = img.size
-                    
-                    # Calculate display size (limit to 600px on the longest side)
-                    max_display_size = 600
-                    if original_width > original_height:
-                        display_width = min(original_width, max_display_size)
-                        display_height = int((original_height/original_width) * display_width)
-                    else:
-                        display_height = min(original_height, max_display_size)
-                        display_width = int((original_width/original_height) * display_height)
-                    
-                    # Upscale the image
-                    if upscale_image(input_path, output_path):
-                        original_url = settings.MEDIA_URL + filename
-                        upscaled_url = settings.MEDIA_URL + output_filename
-                    else:
-                        error = "Failed to upscale the image."
+                    with Image.open(output_path_local) as img:
+                        upscaled_width, upscaled_height = img.size
                 except Exception as e:
-                    error = f"Error processing image: {str(e)}"
-                    if os.path.exists(input_path):
-                        os.remove(input_path)
-            else:
-                error = "Failed to save uploaded image."
+                    print(f"Could not read upscaled image dimensions: {e}")
+
+            except Exception as e:
+                error = f"Failed to process image with the API. Is your Hugging Face Space running? Error: {e}"
+                print(error)
+                if os.path.exists(input_path):
+                     os.remove(input_path)
+                original_url = None
+
     else:
         form = UploadImageForm()
 
-    return render(request, 'upscale_app/index.html', {
+    return render(request, template_name, {
         'form': form,
         'original': original_url,
         'upscaled': upscaled_url,
-        'display_width': display_width,
-        'display_height': display_height,
+        'original_width': original_width,
+        'original_height': original_height,
+        'upscaled_width': upscaled_width,
+        'upscaled_height': upscaled_height,
         'error': error
     })
